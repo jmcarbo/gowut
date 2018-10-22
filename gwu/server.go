@@ -36,6 +36,7 @@ const (
 	pathStatic     = "_gwu_static/" // App path-relative path for GWU static contents.
 	pathSessCheck  = "_sess_ch"     // App path-relative path for checking session (without registering access)
 	pathEvent      = "e"            // Window-relative path for sending events
+	pathUpload     = "u"            // Window-relative path for sending uploads
 	pathRenderComp = "rc"           // Window-relative path for rendering a component
 )
 
@@ -683,6 +684,11 @@ func (s *serverImpl) serveHTTP(w http.ResponseWriter, r *http.Request) {
 
 		// Render just a component
 		s.renderComp(win, w, r)
+	case pathUpload:
+		rwMutex.Lock()
+		defer rwMutex.Unlock()
+
+		s.handleUpload(sess, win, w, r)
 	default:
 		rwMutex.RLock()
 		defer rwMutex.RUnlock()
@@ -867,3 +873,110 @@ func parseIntParam(r *http.Request, paramName string) int {
 	}
 	return -1
 }
+
+// handleUpload handles the event dispatching.
+func (s *serverImpl) handleUpload(sess Session, win Window, wr http.ResponseWriter, r *http.Request) {
+  err := r.ParseMultipartForm(32 << 20)
+  if err != nil {
+    fmt.Println(err)
+  }
+
+  fmt.Printf("%+v\n", r.MultipartForm) 
+
+  file, handler, err := r.FormFile("our-file")
+  if err != nil {
+    fmt.Println(err)
+    return
+  }
+  defer file.Close()
+  fmt.Printf("%+v\n", handler)
+/*
+	focCompID, err := AtoID(r.FormValue(paramFocusedCompID))
+	if err == nil {
+		win.SetFocusedCompID(focCompID)
+	}
+
+	id, err := AtoID(r.FormValue(paramCompID))
+	if err != nil {
+		http.Error(wr, "Invalid component id!", http.StatusBadRequest)
+		return
+	}
+
+	comp := win.ByID(id)
+	if comp == nil {
+		if s.logger != nil {
+			s.logger.Println("\tComp not found:", id)
+		}
+		http.Error(wr, fmt.Sprint("Component not found: ", id), http.StatusBadRequest)
+		return
+	}
+
+	etype := parseIntParam(r, paramEventType)
+	if etype < 0 {
+		http.Error(wr, "Invalid event type!", http.StatusBadRequest)
+		return
+	}
+	if s.logger != nil {
+		s.logger.Println("\tEvent from comp:", id, " event:", etype)
+	}
+
+	event := newEventImpl(EventType(etype), comp, s, sess, wr, r)
+	shared := event.shared
+
+	event.x = parseIntParam(r, paramMouseX)
+	if event.x >= 0 {
+		event.y = parseIntParam(r, paramMouseY)
+		shared.wx = parseIntParam(r, paramMouseWX)
+		shared.wy = parseIntParam(r, paramMouseWY)
+		shared.mbtn = MouseBtn(parseIntParam(r, paramMouseBtn))
+	} else {
+		event.y, shared.wx, shared.wy, shared.mbtn = -1, -1, -1, -1
+	}
+
+	shared.modKeys = parseIntParam(r, paramModKeys)
+	shared.keyCode = Key(parseIntParam(r, paramKeyCode))
+
+	comp.preprocessEvent(event, r)
+
+	// Dispatch event...
+	comp.dispatchEvent(event)
+
+	// Check if a new session was created during event dispatching
+	if shared.session.New() {
+		s.addSessCookie(shared.session, wr)
+	}
+
+	// ...and send back the result
+	wr.Header().Set("Content-Type", "text/plain; charset=utf-8") // We send it as text
+	w := NewWriter(wr)
+	hasAction := false
+	// If we reload, nothing else matters
+	if shared.reload {
+		hasAction = true
+		w.Writevs(eraReloadWin, strComma, shared.reloadWin)
+	} else {
+		if len(shared.dirtyComps) > 0 {
+			hasAction = true
+			w.Writev(eraDirtyComps)
+			for id := range shared.dirtyComps {
+				w.Write(strComma)
+				w.Writev(int(id))
+			}
+		}
+		if shared.focusedComp != nil {
+			if hasAction {
+				w.Write(strSemicol)
+			} else {
+				hasAction = true
+			}
+			w.Writevs(eraFocusComp, strComma, int(shared.focusedComp.ID()))
+			// Also register focusable comp at window
+			win.SetFocusedCompID(shared.focusedComp.ID())
+		}
+	}
+	if !hasAction {
+		w.Writev(eraNoAction)
+	}
+*/
+}
+
