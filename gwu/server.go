@@ -19,16 +19,16 @@
 package gwu
 
 import (
-	"errors"
-	"fmt"
-	"log"
-	"net/http"
-	"net/url"
-	"path"
-	"strconv"
-	"strings"
-	"sync"
-	"time"
+  "errors"
+  "fmt"
+  "log"
+  "net/http"
+  "net/url"
+  "path"
+  "strconv"
+  "strings"
+  "sync"
+  "time"
 )
 
 // Internal path constants.
@@ -798,6 +798,7 @@ func (s *serverImpl) handleEvent(sess Session, win Window, wr http.ResponseWrite
 	}
 
 	etype := parseIntParam(r, paramEventType)
+         
 	if etype < 0 {
 		http.Error(wr, "Invalid event type!", http.StatusBadRequest)
 		return
@@ -881,49 +882,39 @@ func (s *serverImpl) handleUpload(sess Session, win Window, wr http.ResponseWrit
     fmt.Println(err)
   }
 
-  fmt.Printf("%+v\n", r.MultipartForm) 
+  //fmt.Printf("%+v\n", r.MultipartForm)
+  focCompID, err := AtoID(r.FormValue(paramFocusedCompID))
+  if err == nil {
+    win.SetFocusedCompID(focCompID)
+  }
 
-  file, handler, err := r.FormFile("_pCompValue")
+  id, err := AtoID(r.FormValue(paramCompID))
   if err != nil {
     fmt.Println(err)
+  }
+  comp := win.ByID(id)
+  if comp == nil {
+    if s.logger != nil {
+      s.logger.Println("\tComp not found:", id)
+    }
+    http.Error(wr, fmt.Sprint("Component not found: ", id), http.StatusBadRequest)
     return
   }
-  defer file.Close()
-  fmt.Printf("%+v\n", handler)
-/*
-	focCompID, err := AtoID(r.FormValue(paramFocusedCompID))
-	if err == nil {
-		win.SetFocusedCompID(focCompID)
-	}
 
-	id, err := AtoID(r.FormValue(paramCompID))
-	if err != nil {
-		http.Error(wr, "Invalid component id!", http.StatusBadRequest)
-		return
-	}
+  etype := parseIntParam(r, paramEventType)
+  fmt.Printf("Event type %d\n", etype)
+  if etype < 0 {
+    http.Error(wr, "Invalid event type!", http.StatusBadRequest)
+    return
+  }
+  if s.logger != nil {
+    s.logger.Println("\tEvent from comp:", id, " event:", etype)
+  }
 
-	comp := win.ByID(id)
-	if comp == nil {
-		if s.logger != nil {
-			s.logger.Println("\tComp not found:", id)
-		}
-		http.Error(wr, fmt.Sprint("Component not found: ", id), http.StatusBadRequest)
-		return
-	}
+  event := newEventImpl(EventType(etype), comp, s, sess, wr, r)
+  shared := event.shared
 
-	etype := parseIntParam(r, paramEventType)
-	if etype < 0 {
-		http.Error(wr, "Invalid event type!", http.StatusBadRequest)
-		return
-	}
-	if s.logger != nil {
-		s.logger.Println("\tEvent from comp:", id, " event:", etype)
-	}
-
-	event := newEventImpl(EventType(etype), comp, s, sess, wr, r)
-	shared := event.shared
-
-	event.x = parseIntParam(r, paramMouseX)
+  event.x = parseIntParam(r, paramMouseX)
 	if event.x >= 0 {
 		event.y = parseIntParam(r, paramMouseY)
 		shared.wx = parseIntParam(r, paramMouseWX)
@@ -977,6 +968,5 @@ func (s *serverImpl) handleUpload(sess Session, win Window, wr http.ResponseWrit
 	if !hasAction {
 		w.Writev(eraNoAction)
 	}
-*/
 }
 

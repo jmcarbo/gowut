@@ -20,6 +20,10 @@ package gwu
 import (
 	"net/http"
   "fmt"
+  "io"
+  "io/ioutil"
+  "path"
+  "os"
 //	"strconv"
 )
 
@@ -44,9 +48,11 @@ type FileUpload interface {
 
 // FileUpload implementation.
 type fileUploadImpl struct {
-	compImpl       // Component implementation
-	hasEnabledImpl // Has enabled implementation
+  compImpl       // Component implementation
+  hasEnabledImpl // Has enabled implementation
 
+  filename string
+  originalFilename string
 }
 
 
@@ -59,26 +65,30 @@ func NewFileUpload() FileUpload {
 
 // newFileUploadImpl creates a new fileUploadImpl.
 func newFileUploadImpl(valueProviderJs []byte) fileUploadImpl {
-	c := fileUploadImpl{newCompImpl(valueProviderJs), newHasEnabledImpl()}
+	c := fileUploadImpl{newCompImpl(valueProviderJs), newHasEnabledImpl(), "", ""}
 	c.AddSyncOnETypes(ETypeChange)
 	return c
 }
 
 func (c *fileUploadImpl) preprocessEvent(event Event, r *http.Request) {
-	// Empty string for text box is a valid value.
-	// So we have to check whether it is supplied, not just whether its len() > 0
-        /*
-	value := r.FormValue(paramCompValue)
-	if len(value) > 0 {
-		c.text = value
-	} else {
-		// Empty string might be a valid value, if the component value param is present:
-		values, present := r.Form[paramCompValue] // Form is surely parsed (we called FormValue())
-		if present && len(values) > 0 {
-			c.text = values[0]
-		}
-	}
-        */
+  file, handler, err := r.FormFile("cval")
+  if err != nil {
+    fmt.Println(err)
+    return
+  }
+  defer file.Close()
+  //fmt.Printf("%+v\n", handler)
+  myPath:=path.Join("tempfiles")
+  os.MkdirAll(myPath, 0755)
+  f, err :=ioutil.TempFile(myPath, "*_" + handler.Filename)
+  if err != nil {
+    fmt.Println(err)
+    return
+  }
+  defer f.Close()
+  io.Copy(f, file)
+  c.filename=f.Name()
+  c.originalFilename=handler.Filename
 }
 
 var (
@@ -90,9 +100,11 @@ func (c *fileUploadImpl) Render(w Writer) {
 	w.Write(strFileUpload)
 	c.renderAttrsAndStyle(w)
 	c.renderEnabled(w)
-	c.renderEHandlers(w)
+	//c.renderEHandlers(w)
 	w.Write(strInputCl)
         w.Write([]byte(fmt.Sprintf(`<input type="button" value="Upload" id="upload-button-%d" />`, c.id)))
+        w.Write([]byte(fmt.Sprintf(`<div id="upload-status-%d"></div>`, c.id)))
+        w.Write([]byte(fmt.Sprintf(`<div id="progress-%d"></div>`, c.id)))
         w.Write([]byte(fmt.Sprintf(`
           <script>
           var uploadBtn%d = document.getElementById('upload-button-%d');
@@ -103,10 +115,11 @@ func (c *fileUploadImpl) Render(w Writer) {
             // FormData only has the file
             var fileInput = document.getElementById('%d');
             var file = fileInput.files[0];
-            formData.append('_pCompValue', file);
-	    formData.append("_pCompId", "%d")
+            formData.append('et', 11);
+            formData.append('cval', file);
+	    formData.append("cid", "%d")
 	    if (document.activeElement.id != null)
-	      formData.append("_pFocCompId", document.activeElement.id)
+	      formData.append("fcid", document.activeElement.id)
             // Code common to both variants
             sendXHRequest(formData, action);
          }
@@ -128,17 +141,17 @@ func (c *fileUploadImpl) Render(w Writer) {
          }
          // Handle the start of the transmission
          function onloadstartHandler(evt) {
-           var div = document.getElementById('upload-status');
+           var div = document.getElementById('upload-status-%d');
            div.innerHTML = 'Upload started.';
          }
          // Handle the end of the transmission
          function onloadHandler(evt) {
-           var div = document.getElementById('upload-status');
+           var div = document.getElementById('upload-status-%d');
            div.innerHTML += '<' + 'br>File uploaded. Waiting for response.';
          }
          // Handle the progress
          function onprogressHandler(evt) {
-           var div = document.getElementById('progress');
+           var div = document.getElementById('progress-%d');
            var percent = evt.loaded/evt.total*100;
            div.innerHTML = 'Progress: ' + percent + '%';
          }
@@ -154,14 +167,14 @@ func (c *fileUploadImpl) Render(w Writer) {
              return;
            }
            if (readyState == 4 && status == '200' && evt.target.responseText) {
-             var status = document.getElementById('upload-status');
+             var status = document.getElementById('upload-status-%d');
              status.innerHTML += '<' + 'br>Success!';
              var result = document.getElementById('result');
              result.innerHTML = '<p>The server saw it as:</p><pre>' + evt.target.responseText + '</pre>';
            }
          }
          </script>
-  `, c.id, c.id, c.id, c.id, c.id)))
+  `, c.id, c.id, c.id, c.id, c.id, c.id, c.id, c.id, c.id)))
 }
 
 

@@ -170,6 +170,90 @@ func (c *editorImpl) Render(w Writer) {
   w.Write(strDivCl)
 
   w.Write([]byte(fmt.Sprintf(`<script>
+    /**
+    * This code is based on <https://github.com/pourquoi/ckeditor5-simple-upload>
+    * and will be implemented by <https://github.com/mecha-cms/extend.c-k-editor> in the future!
+    */
+
+  // The upload adapter
+  var Adapter = function(loader, urlOrObject, t) {
+
+    var $ = this;
+
+    $.loader = loader;
+    $.urlOrObject = urlOrObject;
+    $.t = t;
+
+    $.upload = function() {
+        return new Promise(function(resolve, reject) {
+            $._initRequest();
+            $._initListeners(resolve, reject);
+            $._sendRequest();
+        });
+    };
+
+    $.abort = function() {
+        $.xhr && $.xhr.abort();
+    };
+
+    $._initRequest = function() {
+        $.xhr = new XMLHttpRequest();
+        var url = $.urlOrObject,
+            headers;
+        if (typeof url === "object") {
+            url = url.url;
+            headers = url.headers;
+        }
+        $.xhr.withCredentials = true;
+        $.xhr.open('POST', url, true);
+        if (headers) {
+            for (var key in headers) {
+                if (typeof headers[key] === "function") {
+                    $.xhr.setRequestHeader(key, headers[key]());
+                } else {
+                    $.xhr.setRequestHeader(key, headers[key]);
+                }
+            }
+        }
+        $.xhr.responseType = 'json';
+    };
+
+    $._initListeners = function(resolve, reject) {
+        var xhr = $.xhr,
+            loader = $.loader,
+            t = $.t,
+            genericError = t('Cannot upload file:') + ' ' + loader.file.name;
+        xhr.addEventListener('error', function() {
+            reject(genericError);
+        });
+        xhr.addEventListener('abort', reject);
+        xhr.addEventListener('load', function() {
+            var response = xhr.response;
+            if (!response || !response.uploaded) {
+                return reject(response && response.error && response.error.message ? response.error.message : genericError);
+            }
+            resolve({
+                'default': response.url
+            });
+        });
+        if (xhr.upload) {
+            xhr.upload.addEventListener('progress', function(evt) {
+                if (evt.lengthComputable) {
+                    loader.uploadTotal = evt.total;
+                    loader.uploaded = evt.loaded;
+                }
+            });
+        }
+    }
+
+    $._sendRequest = function() {
+        var data = new FormData();
+        data.append('upload', $.loader.file);
+        $.xhr.send(data);
+    };
+
+  };
+
     let editor%d;
     InlineEditor
     .create( document.getElementById( '%d' ) )
@@ -180,9 +264,12 @@ func (c *editorImpl) Render(w Writer) {
         //console.log("The data has changed!" + value ); 
         se(null,11,%d,encodeURIComponent(value))
       } );
+      editor%d.plugins.get('FileRepository').createUploadAdapter = function(loader) {
+        return new Adapter(loader, '/upload.php?token=b4d455', editor%d.t);
+      };
     })
     .catch( error => {
       console.error( error );
     });
-    </script>`, c.id, c.id, c.id, c.id, c.id, c.id)))
+    </script>`, c.id, c.id, c.id, c.id, c.id, c.id, c.id, c.id)))
 }
