@@ -103,7 +103,10 @@ func (c *fileUploadImpl) Render(w Writer) {
             // FormData only has the file
             var fileInput = document.getElementById('%d');
             var file = fileInput.files[0];
-            formData.append('our-file', file);
+            formData.append('_pCompValue', file);
+	    formData.append("_pCompId", "%d")
+	    if (document.activeElement.id != null)
+	      formData.append("_pFocCompId", document.activeElement.id)
             // Code common to both variants
             sendXHRequest(formData, action);
          }
@@ -158,7 +161,7 @@ func (c *fileUploadImpl) Render(w Writer) {
            }
          }
          </script>
-  `, c.id, c.id, c.id, c.id)))
+  `, c.id, c.id, c.id, c.id, c.id)))
 }
 
 

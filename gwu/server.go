@@ -883,7 +883,7 @@ func (s *serverImpl) handleUpload(sess Session, win Window, wr http.ResponseWrit
 
   fmt.Printf("%+v\n", r.MultipartForm) 
 
-  file, handler, err := r.FormFile("our-file")
+  file, handler, err := r.FormFile("_pCompValue")
   if err != nil {
     fmt.Println(err)
     return
