@@ -123,6 +123,67 @@ function se(event, etype, compId, compValue) {
 	xhr.send(data);
 }
 
+// Send event
+function se2(event, etype, compId, compValue) {
+	//var xhr = createXmlHttp();
+        // Get an XMLHttpRequest instance
+        var xhr = new XMLHttpRequest();
+
+	xhr.onreadystatechange = function() {
+		if (xhr.readyState == 4 && xhr.status == 200)
+			procEresp(xhr);
+	}
+
+	xhr.open("POST", _pathEvent, true); // asynch call
+	//xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+ 
+        var data = new FormData();
+
+	if (etype != null)
+		data.append( _pEventType , etype);
+	if (compId != null)
+		data.append( _pCompId, compId);
+	if (compValue != null)
+		data.append( _pCompValue, compValue);
+	if (document.activeElement.id != null)
+		data.append( _pFocCompId , document.activeElement.id);
+
+	if (event != null) {
+		if (event.clientX != null) {
+			// Mouse data
+			var x = event.clientX, y = event.clientY;
+			// Account for the amount body is scrolled:
+			eventDoc = (event.target && event.target.ownerDocument) || document;
+			doc = eventDoc.documentElement;
+			body = eventDoc.body;
+			x += (doc && doc.scrollLeft || body && body.scrollLeft || 0) -
+				 (doc && doc.clientLeft || body && body.clientLeft || 0);
+			y += (doc && doc.scrollTop  || body && body.scrollTop  || 0) -
+				 (doc && doc.clientTop  || body && body.clientTop  || 0 );
+			data.append( _pMouseWX , x);
+			data.apend( _pMouseWY , y);
+			var parent = document.getElementById(compId);
+			do {
+				x -= parent.offsetLeft;
+				y -= parent.offsetTop;
+			} while (parent = parent.offsetParent);
+			data.append( _pMouseX , x);
+			data.append(_pMouseY, y);
+			data.append(_pMouseBtn , (event.button < 4 ? event.button : 1)); // IE8 and below uses 4 for middle btn
+		}
+
+		var modKeys;
+		modKeys += event.altKey ? _modKeyAlt : 0;
+		modKeys += event.ctlrKey ? _modKeyCtlr : 0;
+		modKeys += event.metaKey ? _modKeyMeta : 0;
+		modKeys += event.shiftKey ? _modKeyShift : 0;
+		data.append( _pModKeys, modKeys);
+		data.append(_pKeyCode, (event.which ? event.which : event.keyCode));
+	}
+
+	xhr.send(data);
+}
+
 function procEresp(xhr) {
 	var actions = xhr.responseText.split(";");
 

@@ -191,6 +191,7 @@ func (w *windowImpl) renderDynJs(wr Writer, s Server) {
 	wr.Writess("var _pathWin='", s.AppPath(), w.name, "/';")
 	wr.Writess("var _pathEvent=_pathWin+'", pathEvent, "';")
 	wr.Writess("var _pathUpload=_pathWin+'", pathUpload, "';")
+	wr.Writess("var _pathUploadCK=_pathWin+'", pathUploadCK, "';")
 	wr.Writess("var _pathRenderComp=_pathWin+'", pathRenderComp, "';")
 	wr.Writess("var _focCompId='", w.focusedCompID.String(), "';")
 	wr.Write(strScriptCl)

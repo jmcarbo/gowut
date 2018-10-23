@@ -261,15 +261,16 @@ func (c *editorImpl) Render(w Writer) {
       editor%d = newEditor;
       editor%d.model.document.on( 'change:data', () => { 
         value = editor%d.getData()
-        //console.log("The data has changed!" + value ); 
-        se(null,11,%d,encodeURIComponent(value))
+        console.log("The data has changed!" + value ); 
+        //se(null,11,%d,encodeURIComponent(value))
+        se2(null,11,%d,value)
       } );
       editor%d.plugins.get('FileRepository').createUploadAdapter = function(loader) {
-        return new Adapter(loader, '/upload.php?token=b4d455', editor%d.t);
+        return new Adapter(loader, _pathUploadCK, editor%d.t);
       };
     })
     .catch( error => {
       console.error( error );
     });
-    </script>`, c.id, c.id, c.id, c.id, c.id, c.id, c.id, c.id)))
+    </script>`, c.id, c.id, c.id, c.id, c.id, c.id, c.id, c.id, c.id)))
 }

@@ -29,12 +29,18 @@ import (
   "strings"
   "sync"
   "time"
+  "encoding/json"
+  "os"
+  "io"
+  "io/ioutil"
 )
 
 // Internal path constants.
 const (
 	pathStatic     = "_gwu_static/" // App path-relative path for GWU static contents.
 	pathSessCheck  = "_sess_ch"     // App path-relative path for checking session (without registering access)
+	pathMedia  = "_media"     // App path-relative path for checking session (without registering access)
+	pathUploadCK  = "uck"     // Window-relative path for uploading images to ck editor
 	pathEvent      = "e"            // Window-relative path for sending events
 	pathUpload     = "u"            // Window-relative path for sending uploads
 	pathRenderComp = "rc"           // Window-relative path for rendering a component
@@ -628,6 +634,7 @@ func (s *serverImpl) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+
 	if len(parts) < 1 || parts[0] == "" {
 		// Missing window name, render window list
 		s.appRootHandlerFunc(w, r, sess)
@@ -689,6 +696,11 @@ func (s *serverImpl) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		defer rwMutex.Unlock()
 
 		s.handleUpload(sess, win, w, r)
+        case pathUploadCK:
+		rwMutex.Lock()
+		defer rwMutex.Unlock()
+		s.handleUploadCK(sess, win, w, r)
+
 	default:
 		rwMutex.RLock()
 		defer rwMutex.RUnlock()
@@ -970,3 +982,39 @@ func (s *serverImpl) handleUpload(sess Session, win Window, wr http.ResponseWrit
 	}
 }
 
+// handleUploadCK handles the event dispatching.
+func (s *serverImpl) handleUploadCK(sess Session, win Window, wr http.ResponseWriter, r *http.Request) {
+  err := r.ParseMultipartForm(32 << 20)
+  if err != nil {
+    fmt.Println(err)
+  }
+  fmt.Printf("%+v\n", r.MultipartForm)
+  file, handler, err := r.FormFile("upload")
+  if err != nil {
+    fmt.Println(err)
+    return
+  }
+  defer file.Close()
+  //fmt.Printf("%+v\n", handler)
+  myPath:=path.Join("ckfiles")
+  os.MkdirAll(myPath, 0755)
+  f, err :=ioutil.TempFile(myPath, "*_" + handler.Filename)
+  if err != nil {
+    fmt.Println(err)
+    return
+  }
+  defer f.Close()
+  io.Copy(f, file)
+  // ...and send back the result
+  wr.Header().Set("Content-Type", "text/json; charset=utf-8") // We send it as text
+  u := struct { Uploaded bool `json:"uploaded"`
+    Url string   `json:"url:omitempty"`
+    Error string `json:"error:omitempty"`
+  }{}
+  u.Error = "unknown error"
+  fmt.Printf("%s\n", f.Name())
+
+  u.Url=path.Join(f.Name())
+  u.Uploaded = true
+  json.NewEncoder(wr).Encode(u)
+}
