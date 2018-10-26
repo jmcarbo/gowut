@@ -75,6 +75,8 @@ type Editor interface {
 	// allowed in the text box.
 	// Pass -1 to not limit the maximum length.
 	SetMaxLength(maxLength int)
+
+        
 }
 
 // TextBox implementation.
@@ -84,6 +86,7 @@ type editorImpl struct {
 	hasEnabledImpl // Has enabled implementation
 
 	rows, cols int  // Number of displayed rows and columns.
+  isInline bool
 }
 
 var (
@@ -97,9 +100,16 @@ func NewEditor(text string) *editorImpl {
 	return &c
 }
 
+// NewEditor creates a new Editor
+func NewInlineEditor(text string) *editorImpl {
+	c := newEditorImpl(strEncURIThisV, text, true)
+	c.Style().AddClass("gwu-Editor")
+	return &c
+}
+
 // newTextBoxImpl creates a new textBoxImpl.
-func newEditorImpl(valueProviderJs []byte, text string, isPassw bool) editorImpl {
-	c := editorImpl{newCompImpl(valueProviderJs), newHasTextImpl(text), newHasEnabledImpl(), 1, 20}
+func newEditorImpl(valueProviderJs []byte, text string, isInline bool) editorImpl {
+	c := editorImpl{newCompImpl(valueProviderJs), newHasTextImpl(text), newHasEnabledImpl(), 1, 20, isInline}
 	c.AddSyncOnETypes(ETypeChange)
 	return c
 }
@@ -158,8 +168,16 @@ var (
 	strDivCl   = []byte("</div>") // "</textarea>"
 )
 
-// renderTextArea renders the component as an textarea HTML tag.
 func (c *editorImpl) Render(w Writer) {
+  if c.isInline {
+    c.RenderInline(w)
+  } else {
+    c.RenderTextArea(w)
+  }
+}
+
+// renderTextArea renders the component as an textarea HTML tag.
+func (c *editorImpl) RenderInline(w Writer) {
   w.Write(strDivOp)
   c.renderAttrsAndStyle(w)
   c.renderEnabled(w)
@@ -168,6 +186,131 @@ func (c *editorImpl) Render(w Writer) {
 
   w.Writes(c.text)
   w.Write(strDivCl)
+
+  w.Write([]byte(fmt.Sprintf(`<script>
+    /**
+    * This code is based on <https://github.com/pourquoi/ckeditor5-simple-upload>
+    * and will be implemented by <https://github.com/mecha-cms/extend.c-k-editor> in the future!
+    */
+
+  // The upload adapter
+  var Adapter = function(loader, urlOrObject, t) {
+
+    var $ = this;
+
+    $.loader = loader;
+    $.urlOrObject = urlOrObject;
+    $.t = t;
+
+    $.upload = function() {
+        return new Promise(function(resolve, reject) {
+            $._initRequest();
+            $._initListeners(resolve, reject);
+            $._sendRequest();
+        });
+    };
+
+    $.abort = function() {
+        $.xhr && $.xhr.abort();
+    };
+
+    $._initRequest = function() {
+        $.xhr = new XMLHttpRequest();
+        var url = $.urlOrObject,
+            headers;
+        if (typeof url === "object") {
+            url = url.url;
+            headers = url.headers;
+        }
+        $.xhr.withCredentials = true;
+        $.xhr.open('POST', url, true);
+        if (headers) {
+            for (var key in headers) {
+                if (typeof headers[key] === "function") {
+                    $.xhr.setRequestHeader(key, headers[key]());
+                } else {
+                    $.xhr.setRequestHeader(key, headers[key]);
+                }
+            }
+        }
+        $.xhr.responseType = 'json';
+    };
+
+    $._initListeners = function(resolve, reject) {
+        var xhr = $.xhr,
+            loader = $.loader,
+            t = $.t,
+            genericError = t('Cannot upload file:') + ' ' + loader.file.name;
+        xhr.addEventListener('error', function() {
+            reject(genericError);
+        });
+        xhr.addEventListener('abort', reject);
+        xhr.addEventListener('load', function() {
+            var response = xhr.response;
+            if (!response || !response.uploaded) {
+                return reject(response && response.error && response.error.message ? response.error.message : genericError);
+            }
+            resolve({
+                'default': response.url
+            });
+        });
+        if (xhr.upload) {
+            xhr.upload.addEventListener('progress', function(evt) {
+                if (evt.lengthComputable) {
+                    loader.uploadTotal = evt.total;
+                    loader.uploaded = evt.loaded;
+                }
+            });
+        }
+    }
+
+    $._sendRequest = function() {
+        var data = new FormData();
+        data.append('upload', $.loader.file);
+        $.xhr.send(data);
+    };
+
+  };
+
+    let editor%d;
+    InlineEditor
+    .create( document.getElementById( '%d' ) )
+    .then( newEditor => {
+      editor%d = newEditor;
+      editor%d.model.document.on( 'change:data', () => { 
+        value = editor%d.getData()
+        console.log("The data has changed!" + value ); 
+        //se(null,11,%d,encodeURIComponent(value))
+        se2(null,11,%d,value)
+      } );
+      editor%d.plugins.get('FileRepository').createUploadAdapter = function(loader) {
+        return new Adapter(loader, _pathUploadCK, editor%d.t);
+      };
+    })
+    .catch( error => {
+      console.error( error );
+    });
+    </script>`, c.id, c.id, c.id, c.id, c.id, c.id, c.id, c.id, c.id)))
+}
+
+// renderTextArea renders the component as an textarea HTML tag.
+func (c *editorImpl) RenderTextArea(w Writer) {
+  w.Write(strTextareaOp)
+  c.renderAttrsAndStyle(w)
+  c.renderEnabled(w)
+  c.renderEHandlers(w)
+  
+  // New line char after the <textarea> tag is ignored.
+  // So we must render a newline after textarea, else if text value
+  // starts with a new line, it will be omitted!
+  w.Write(strRows)
+  w.Writev(c.rows)
+  w.Write(strCols)
+  w.Writev(c.cols)
+  w.Write(strTextAreaOpCl)
+  
+  c.renderText(w)
+  w.Write(strTextAreaCl)
 
   w.Write([]byte(fmt.Sprintf(`<script>
     /**
