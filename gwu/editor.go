@@ -398,7 +398,7 @@ func (c *editorImpl) RenderTextArea(w Writer) {
   };
 
     let editor%d;
-    InlineEditor
+    ClassicEditor
     .create( document.getElementById( '%d' ) )
     .then( newEditor => {
       editor%d = newEditor;
