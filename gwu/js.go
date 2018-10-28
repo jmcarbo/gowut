@@ -185,6 +185,10 @@ function se2(event, etype, compId, compValue) {
 }
 
 function procEresp(xhr) {
+  element = document.createElement( 'div' );
+  element.setAttribute("id", "loading");
+  element.classList.add("loading");
+  document.body.appendChild(element);
 	var actions = xhr.responseText.split(";");
 
 	if (actions.length == 0) {
