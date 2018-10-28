@@ -185,23 +185,26 @@ function se2(event, etype, compId, compValue) {
 }
 
 function procEresp(xhr) {
-  element = document.createElement( 'div' );
-  element.setAttribute("id", "loading");
-  element.classList.add("loading");
-  document.body.appendChild(element);
 	var actions = xhr.responseText.split(";");
 
 	if (actions.length == 0) {
 		window.alert("No response received!");
 		return;
 	}
+  /*
+  element = document.createElement( 'div' );
+  element.setAttribute("id", "loading");
+  element.classList.add("loading");
+  document.body.appendChild(element);
+  */
 	for (var i = 0; i < actions.length; i++) {
 		var n = actions[i].split(",");
 
 		switch (parseInt(n[0])) {
 		case _eraDirtyComps:
-			for (var j = 1; j < n.length; j++)
-				rerenderComp(n[j]);
+			for (var j = 1; j < n.length; j++) {
+			  rerenderComp(n[j]);
+                        }
 			break;
 		case _eraFocusComp:
 			if (n.length > 1)
@@ -220,6 +223,7 @@ function procEresp(xhr) {
 			break;
 		}
 	}
+  //element.parentNode.removeChild(element);
 }
 
 function rerenderComp(compId) {
