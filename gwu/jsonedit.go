@@ -15,6 +15,8 @@
 
 // Defines the TextBox component.
 
+// w.AddHeadHTML(`<script src="https://cdn.jsdelivr.net/npm/@json-editor/json-editor/dist/jsoneditor.min.js"></script>`)
+
 package gwu
 
 import (
@@ -148,7 +150,6 @@ func (c *jsonEditImpl) Render(w Writer) {
 	//c.renderEHandlers(w)
 	w.Write(strInputCl)
 */
-        w.Write([]byte(editorConf))
         w.Write([]byte(fmt.Sprintf(`<div id="%d" />`, c.id)))
 	if c.text != "" {
         w.Write([]byte(fmt.Sprintf(`
