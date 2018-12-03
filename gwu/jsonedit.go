@@ -88,6 +88,57 @@ func (c *jsonEditImpl) preprocessEvent(event Event, r *http.Request) {
 	}
 }
 
+var editorConf = `<script>
+    JSONEditor.defaults.languages.es = {
+      error_notset: "Cal informar la propietat",
+      error_notempty: "Cal un valor",
+      error_enum: "Value must be one of the enumerated values",
+      error_anyOf: "Value must validate against at least one of the provided schemas",
+      error_oneOf: 'Value must validate against exactly one of the provided schemas. It currently validates against {{0}} of the schemas.',
+      error_not: "Value must not validate against the provided schema",
+      error_type_union: "Value must be one of the provided types",
+      error_type: "Value must be of type {{0}}",
+      error_disallow_union: "Value must not be one of the provided disallowed types",
+      error_disallow: "Value must not be of type {{0}}",
+      error_multipleOf: "Value must be a multiple of {{0}}",
+      error_maximum_excl: "Value must be less than {{0}}",
+      error_maximum_incl: "Value must be at most {{0}}",
+      error_minimum_excl: "Value must be greater than {{0}}",
+      error_minimum_incl: "Value must be at least {{0}}",
+      error_maxLength: "Value must be at most {{0}} characters long",
+      error_minLength: "Value must be at least {{0}} characters long",
+      error_pattern: "Value must match the pattern {{0}}",
+      error_additionalItems: "No additional items allowed in this array",
+      error_maxItems: "Value must have at most {{0}} items",
+      error_minItems: "Value must have at least {{0}} items",
+      error_uniqueItems: "Array must have unique items",
+      error_maxProperties: "Object must have at most {{0}} properties",
+      error_minProperties: "Object must have at least {{0}} properties",
+      error_required: "Object is missing the required property '{{0}}'",
+      error_additional_properties: "No additional properties allowed, but property {{0}} is set",
+      error_dependency: "Must have property {{0}}",
+      error_date: 'Date must be in the format {{0}}',
+      error_time: 'Time must be in the format {{0}}',
+      error_datetime_local: 'Datetime must be in the format {{0}}',
+      error_invalid_epoch: 'Date must be greater than 1 January 1970',
+      button_delete_all: "Tot",
+      button_delete_all_title: "Esborrar tot",
+      button_delete_last: "Últim {{0}}",
+      button_delete_last_title: "Delete Last {{0}}",
+      button_add_row_title: "Afegir {{0}}",
+      button_move_down_title: "More avall",
+      button_move_up_title: "Moure amunt",
+      button_delete_row_title: "Esborrar {{0}}",
+      button_delete_row_title_short: "Esborrar",
+      button_collapse: "Collapse",
+      button_expand: "Expand",
+      flatpickr_toggle_button: "Toggle",
+      flatpickr_clear_button: "Netejar"
+    };
+    
+    JSONEditor.defaults.default_language = 'es';
+    </script>
+`
 
 func (c *jsonEditImpl) Render(w Writer) {
 /*
@@ -97,6 +148,7 @@ func (c *jsonEditImpl) Render(w Writer) {
 	//c.renderEHandlers(w)
 	w.Write(strInputCl)
 */
+        w.Write([]byte(editorConf))
         w.Write([]byte(fmt.Sprintf(`<div id="%d" />`, c.id)))
 	if c.text != "" {
         w.Write([]byte(fmt.Sprintf(`
