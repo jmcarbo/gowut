@@ -105,7 +105,10 @@ func (c *jsonEditImpl) Render(w Writer) {
       var editor%d = new JSONEditor(document.getElementById('%d'),{
         schema: %s,
 	startval: %s,
-        theme: 'bootstrap4'
+        theme: 'bootstrap4',
+        disable_collapse: true,
+	disable_edit_json: true,
+	disable_properties: true
       });
       
       // Hook up the submit button to log to the console
