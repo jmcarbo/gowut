@@ -160,7 +160,8 @@ func (c *jsonEditImpl) Render(w Writer) {
         theme: 'bootstrap4',
         disable_collapse: true,
 	disable_edit_json: true,
-	disable_properties: true
+	disable_properties: true,
+        show_errors: "change"
       });
       
       // Hook up the submit button to log to the console
@@ -185,7 +186,8 @@ func (c *jsonEditImpl) Render(w Writer) {
         theme: 'bootstrap4',
         disable_collapse: true,
 	disable_edit_json: true,
-	disable_properties: true
+	disable_properties: true,
+        show_errors: "change"
       });
       
       editor%d.on('change',function() {
