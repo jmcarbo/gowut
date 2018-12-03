@@ -182,7 +182,10 @@ func (c *jsonEditImpl) Render(w Writer) {
       // Initialize the editor with a JSON schema
       var editor%d = new JSONEditor(document.getElementById('%d'),{
         schema: %s,
-        theme: 'bootstrap4'
+        theme: 'bootstrap4',
+        disable_collapse: true,
+	disable_edit_json: true,
+	disable_properties: true
       });
       
       editor%d.on('change',function() {
