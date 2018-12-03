@@ -162,7 +162,8 @@ func (c *jsonEditImpl) Render(w Writer) {
         disable_collapse: true,
 	disable_edit_json: true,
 	disable_properties: true,
-        show_errors: "change"
+        show_errors: "change",
+        iconlib: "bootstrap3"
       });
       
       // Hook up the submit button to log to the console
@@ -188,7 +189,8 @@ func (c *jsonEditImpl) Render(w Writer) {
         disable_collapse: true,
 	disable_edit_json: true,
 	disable_properties: true,
-        show_errors: "change"
+        show_errors: "change",
+        iconlib: "bootstrap3"
       });
       
       editor%d.on('change',function() {
